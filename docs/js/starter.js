@@ -31,7 +31,6 @@ var app = ElmNormalized.init({
 if (app.ports) {
   if (app.ports.setStorage) {
     app.ports.setStorage.subscribe(function (state) {
-      console.log('xxx1', state);
       localStorage.setItem('elm-todo-save', JSON.stringify(state));
     });
   }

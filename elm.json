@@ -1,7 +1,6 @@
 {
     "type": "application",
     "source-directories": [
-        "src-examples",
         "src"
     ],
     "elm-version": "0.19.1",
@@ -16,8 +15,11 @@
             "elm/svg": "1.0.1",
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
+            "elm-community/list-extra": "8.6.0",
             "elm-community/string-extra": "4.0.1",
-            "mdgriffith/elm-ui": "1.1.8"
+            "mdgriffith/elm-ui": "1.1.8",
+            "miniBill/elm-codec": "2.0.0",
+            "truqu/elm-base64": "2.0.4"
         },
         "indirect": {
             "elm/bytes": "1.0.8",
