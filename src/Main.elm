@@ -123,32 +123,32 @@ view model =
             permanentStateToXY permanentState
     in
     layout [] <|
-        column []
-            ([ text "Hi"
-             , Input.text []
-                { label = Input.labelHidden ""
-                , onChange = MsgChangeX
-                , placeholder = Nothing
-                , text = permanentState.x
-                }
-             , Input.text []
-                { label = Input.labelHidden ""
-                , onChange = MsgChangeY
-                , placeholder = Nothing
-                , text = permanentState.y
-                }
-             ]
-                ++ List.indexedMap
-                    (\index _ ->
-                        Input.text []
-                            { label = Input.labelHidden ""
-                            , onChange = MsgChangeAttendee index
-                            , placeholder = Nothing
-                            , text = Maybe.withDefault "" <| List.Extra.getAt index permanentState.attendees
-                            }
-                    )
-                    (List.repeat (xy.x * xy.y) ())
-            )
+        -- column []
+        --     ([ text "Hi"
+        --      , Input.text []
+        --         { label = Input.labelHidden ""
+        --         , onChange = MsgChangeX
+        --         , placeholder = Nothing
+        --         , text = permanentState.x
+        --         }
+        --      , Input.text []
+        --         { label = Input.labelHidden ""
+        --         , onChange = MsgChangeY
+        --         , placeholder = Nothing
+        --         , text = permanentState.y
+        --         }
+        --      ]
+        --         ++ List.indexedMap
+        --             (\index _ ->
+        --                 Input.text []
+        --                     { label = Input.labelHidden ""
+        --                     , onChange = MsgChangeAttendee index
+        --                     , placeholder = Nothing
+        --                     , text = Maybe.withDefault "" <| List.Extra.getAt index permanentState.attendees
+        --                     }
+        --             )
+        --             (List.repeat (xy.x * xy.y) ())
+        --     )
 
 
 permanentStateToXY : { a | x : String, y : String } -> { x : Int, y : Int }
