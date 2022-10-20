@@ -4,8 +4,12 @@ import Base64
 import Browser
 import Codec
 import Element exposing (..)
+import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
 import Html
+import Html.Attributes
 import List.Extra
 import String.Extra
 import Url
@@ -118,37 +122,94 @@ view model =
         permanentState =
             model.permanentState
 
-        xy : { x : Int, y : Int }
-        xy =
+        { x, y } =
             permanentStateToXY permanentState
+
+        spacingSize =
+            10
     in
     layout [] <|
-        -- column []
-        --     ([ text "Hi"
-        --      , Input.text []
-        --         { label = Input.labelHidden ""
-        --         , onChange = MsgChangeX
-        --         , placeholder = Nothing
-        --         , text = permanentState.x
-        --         }
-        --      , Input.text []
-        --         { label = Input.labelHidden ""
-        --         , onChange = MsgChangeY
-        --         , placeholder = Nothing
-        --         , text = permanentState.y
-        --         }
-        --      ]
-        --         ++ List.indexedMap
-        --             (\index _ ->
-        --                 Input.text []
-        --                     { label = Input.labelHidden ""
-        --                     , onChange = MsgChangeAttendee index
-        --                     , placeholder = Nothing
-        --                     , text = Maybe.withDefault "" <| List.Extra.getAt index permanentState.attendees
-        --                     }
-        --             )
-        --             (List.repeat (xy.x * xy.y) ())
-        --     )
+        column
+            [ width fill
+            , height fill
+            , Background.color <| rgb 0 0.3 0
+            , spacing spacingSize
+            , padding spacingSize
+            ]
+            (List.indexedMap
+                (\indexX _ ->
+                    row
+                        [ width fill
+                        , height fill
+                        , spacing spacingSize
+                        ]
+                        (List.indexedMap
+                            (\indexY _ ->
+                                el
+                                    [ width <| fill
+                                    , height <| fill
+                                    , Background.color <| rgb 0 0.8 0
+                                    , inFront <|
+                                        el
+                                            [ Font.size 40
+                                            , Background.color <| rgba 0 0 0 0.5
+                                            , paddingEach { top = 8, right = 12, bottom = 8, left = 12 }
+                                            , moveRight 10
+                                            , moveDown 10
+                                            , Border.rounded 10
+                                            , Font.bold
+                                            , Font.color <| rgb 1 1 1
+                                            ]
+                                            (text <|
+                                                String.fromInt <|
+                                                    (indexX + 1)
+                                                        * (indexY + 1)
+                                            )
+                                    ]
+                                <|
+                                    html <|
+                                        Html.iframe
+                                            [ Html.Attributes.style "border" "0"
+                                            , Html.Attributes.style "height" "100%"
+                                            , Html.Attributes.style "background" "#4a0"
+                                            , Html.Attributes.src "https://repubblica.it/"
+                                            ]
+                                            []
+                            )
+                            (List.repeat x 0)
+                        )
+                )
+                (List.repeat x 0)
+            )
+
+
+
+-- column []
+--     ([ text "Hi"
+--      , Input.text []
+--         { label = Input.labelHidden ""
+--         , onChange = MsgChangeX
+--         , placeholder = Nothing
+--         , text = permanentState.x
+--         }
+--      , Input.text []
+--         { label = Input.labelHidden ""
+--         , onChange = MsgChangeY
+--         , placeholder = Nothing
+--         , text = permanentState.y
+--         }
+--      ]
+--         ++ List.indexedMap
+--             (\index _ ->
+--                 Input.text []
+--                     { label = Input.labelHidden ""
+--                     , onChange = MsgChangeAttendee index
+--                     , placeholder = Nothing
+--                     , text = Maybe.withDefault "" <| List.Extra.getAt index permanentState.attendees
+--                     }
+--             )
+--             (List.repeat (xy.x * xy.y) ())
+--     )
 
 
 permanentStateToXY : { a | x : String, y : String } -> { x : Int, y : Int }
