@@ -1,4 +1,4 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Base64
 import Browser
@@ -18,13 +18,19 @@ import String.Extra
 import Url
 
 
+port pushUrl : { url : String, sendItBack : Bool } -> Cmd msg
+
+
+port onUrlChange : (String -> msg) -> Sub msg
+
+
 main : Program Flags Model Msg
 main =
     Browser.element
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = \_ -> onUrlChange MsgUrlChanged
         }
 
 
@@ -36,6 +42,7 @@ type alias Flags =
 type alias Model =
     { permanentState : PermanentState
     , modality : Modality
+    , locationHref : String
     }
 
 
@@ -48,32 +55,34 @@ type alias PermanentState =
     }
 
 
+locationHrefToPermanentState : String -> PermanentState
+locationHrefToPermanentState locationHref =
+    locationHref
+        |> Url.fromString
+        |> Maybe.map .path
+        |> Maybe.withDefault ""
+        |> String.dropLeft 1
+        |> Base64.decode
+        |> Result.withDefault ""
+        |> Codec.decodeString codecPermanentState
+        |> Result.withDefault initPermanentState
+
+
+initPermanentState : PermanentState
+initPermanentState =
+    { x = "4"
+    , y = "3"
+    , attendees = Dict.empty
+    , invitations = Dict.empty
+    , frames = Dict.empty
+    }
+
+
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    let
-        initPermanentState : PermanentState
-        initPermanentState =
-            { x = "4"
-            , y = "3"
-            , attendees = Dict.fromList [ ( "1", "Mark" ), ( "2", "John" ) ]
-            , invitations = Dict.fromList [ ( "1", "Mark" ), ( "2", "John" ) ]
-            , frames = Dict.fromList [ ( "1", "Mark" ), ( "2", "John" ) ]
-            }
-
-        permanentState : PermanentState
-        permanentState =
-            flags.locationHref
-                |> Url.fromString
-                |> Maybe.map .path
-                |> Maybe.withDefault ""
-                |> String.dropLeft 1
-                |> Base64.decode
-                |> Result.withDefault ""
-                |> Codec.decodeString codecPermanentState
-                |> Result.withDefault initPermanentState
-    in
-    ( { permanentState = permanentState
+    ( { permanentState = locationHrefToPermanentState flags.locationHref
       , modality = ModalityNormal
+      , locationHref = flags.locationHref
       }
     , Cmd.none
     )
@@ -113,38 +122,66 @@ update msg model =
             model.permanentState
     in
     case msg of
-        MsgChangeX string ->
-            ( { model | permanentState = { permanentState | x = string } }, Cmd.none )
+        MsgUrlChanged locationHref ->
+            ( { model | permanentState = locationHrefToPermanentState locationHref }, Cmd.none )
 
-        MsgChangeY string ->
-            ( { model | permanentState = { permanentState | y = string } }, Cmd.none )
+        MsgChangeValue valueType id value ->
+            let
+                newModel =
+                    case valueType of
+                        ValueX ->
+                            { model | permanentState = { permanentState | x = value } }
 
-        MsgChangeValue value id name ->
-            case value of
-                ValueAttendee ->
-                    ( { model | permanentState = { permanentState | attendees = Dict.insert id name permanentState.attendees } }, Cmd.none )
+                        ValueY ->
+                            { model | permanentState = { permanentState | y = value } }
 
-                ValueInvitation ->
-                    ( { model | permanentState = { permanentState | invitations = Dict.insert id name permanentState.invitations } }, Cmd.none )
+                        ValueAttendee ->
+                            { model | permanentState = { permanentState | attendees = Dict.insert id value permanentState.attendees } }
 
-                ValueFrame ->
-                    ( { model | permanentState = { permanentState | frames = Dict.insert id name permanentState.frames } }, Cmd.none )
+                        ValueInvitation ->
+                            { model | permanentState = { permanentState | invitations = Dict.insert id value permanentState.invitations } }
+
+                        ValueFrame ->
+                            { model | permanentState = { permanentState | frames = Dict.insert id value permanentState.frames } }
+
+                _ =
+                    Debug.log "xxx" <| buidlUrl model.locationHref model.permanentState
+            in
+            ( newModel
+            , pushUrl
+                -- In this case we modify the model directly wihtout getting
+                -- the URL back from JavaScript because we want to be fast,
+                -- as the user is typing.
+                { sendItBack = False
+                , url = buidlUrl newModel.locationHref newModel.permanentState
+                }
+            )
 
         MsgChangeModality modality ->
             ( { model | modality = modality }, Cmd.none )
 
 
+buidlUrl : String -> PermanentState -> String
+buidlUrl locationHref permanentState =
+    locationHref
+        |> Url.fromString
+        |> Maybe.map (\url -> { url | path = "/" ++ Base64.encode (Codec.encodeToString 0 codecPermanentState permanentState) })
+        |> Maybe.map Url.toString
+        |> Maybe.withDefault locationHref
+
+
 type Msg
-    = MsgChangeX String
-    | MsgChangeY String
-    | MsgChangeValue Value String String
+    = MsgChangeValue Value String String
     | MsgChangeModality Modality
+    | MsgUrlChanged String
 
 
 type Value
     = ValueAttendee
     | ValueInvitation
     | ValueFrame
+    | ValueX
+    | ValueY
 
 
 primaryColor : Color
@@ -163,6 +200,11 @@ menuAttrs =
     ]
 
 
+iconSize : Int
+iconSize =
+    25
+
+
 iconMenuLeft : Model -> Int -> Attribute Msg
 iconMenuLeft model id_ =
     let
@@ -179,33 +221,33 @@ iconMenuLeft model id_ =
         row
             (menuAttrs ++ [ moveRight 10 ])
             ([ el
-                [ Font.size 36
+                [ Font.size 26
                 , Font.bold
                 ]
                 (text <| String.fromInt id)
              ]
                 ++ (case model.modality of
                         ModalityNormal ->
-                            [ Input.button [] { label = el [] <| html <| Material.Icons.open_in_full 30 Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityFullscreen id }
-                            , Input.button [] { label = el [] <| html <| Material.Icons.edit 30 Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityEditing }
-                            , el [] <| html <| Material.Icons.open_in_new 30 Material.Icons.Types.Inherit
-                            , el [] <| html <| Material.Icons.settings 30 Material.Icons.Types.Inherit
+                            [ Input.button [] { label = el [] <| html <| Material.Icons.open_in_full iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityFullscreen id }
+                            , Input.button [] { label = el [] <| html <| Material.Icons.edit iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityEditing }
+                            , el [] <| html <| Material.Icons.open_in_new iconSize Material.Icons.Types.Inherit
+                            , el [] <| html <| Material.Icons.settings iconSize Material.Icons.Types.Inherit
                             ]
 
                         ModalityEditing ->
-                            [ Input.button [] { label = el [] <| html <| Material.Icons.save 30 Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityNormal } ]
+                            [ Input.button [] { label = el [] <| html <| Material.Icons.save iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityNormal } ]
 
                         ModalityFullscreen _ ->
-                            [ Input.button [] { label = el [] <| html <| Material.Icons.open_in_full 30 Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityFullscreen id }
-                            , Input.button [] { label = el [] <| html <| Material.Icons.edit 30 Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityEditing }
-                            , el [] <| html <| Material.Icons.open_in_new 30 Material.Icons.Types.Inherit
-                            , el [] <| html <| Material.Icons.settings 30 Material.Icons.Types.Inherit
+                            [ Input.button [] { label = el [] <| html <| Material.Icons.open_in_full iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityFullscreen id }
+                            , Input.button [] { label = el [] <| html <| Material.Icons.edit iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityEditing }
+                            , el [] <| html <| Material.Icons.open_in_new iconSize Material.Icons.Types.Inherit
+                            , el [] <| html <| Material.Icons.settings iconSize Material.Icons.Types.Inherit
                             ]
 
                         ModalitySettings ->
                             []
                    )
-                ++ [ el [ Font.size 28, moveDown 3 ] <|
+                ++ [ el [ Font.size 20, moveDown 3 ] <|
                         text <|
                             Maybe.withDefault "" <|
                                 Dict.get (String.fromInt id) model.permanentState.attendees
@@ -227,7 +269,7 @@ viewFullscreen model =
         , inFront <|
             el (menuAttrs ++ [ alignRight, moveLeft 10 ]) <|
                 Input.button []
-                    { label = el [] <| html <| Material.Icons.close_fullscreen 30 Material.Icons.Types.Inherit
+                    { label = el [] <| html <| Material.Icons.close_fullscreen iconSize Material.Icons.Types.Inherit
                     , onPress = Just <| MsgChangeModality <| ModalityNormal
                     }
         ]
@@ -262,7 +304,7 @@ view model =
             permanentStateToXY permanentState
     in
     layout
-        ([]
+        ([ Font.size 16 ]
             ++ (case model.modality of
                     ModalityFullscreen _ ->
                         [ inFront <|
@@ -328,13 +370,13 @@ viewFrame model id =
                                 [ width fill
                                 , height fill
                                 , Background.color <| rgba 0 0 0 0.4
-                                , paddingEach { top = 80, right = 10, bottom = 0, left = 10 }
+                                , paddingEach { top = 55, right = 10, bottom = 0, left = 10 }
                                 , spacing 10
                                 ]
                             <|
                                 [ inputField { existingData = model.permanentState.attendees, id = id, label = "Attendee", valueType = ValueAttendee }
-                                , inputField { existingData = model.permanentState.attendees, id = id, label = "Invitation", valueType = ValueInvitation }
-                                , inputField { existingData = model.permanentState.attendees, id = id, label = "Frame", valueType = ValueFrame }
+                                , inputField { existingData = model.permanentState.invitations, id = id, label = "Invitation", valueType = ValueInvitation }
+                                , inputField { existingData = model.permanentState.frames, id = id, label = "Frame", valueType = ValueFrame }
                                 ]
                         ]
 
@@ -373,8 +415,8 @@ inputField { label, valueType, existingData, id } =
         , Border.rounded 10
         , width fill
         ]
-        [ el [ width <| px 90, Font.alignRight ] <| text label
-        , Input.text [ Border.rounded 6 ]
+        [ el [ width <| px 80, Font.alignRight ] <| text label
+        , Input.text [ Border.rounded 6, padding 10 ]
             { onChange = MsgChangeValue valueType (String.fromInt id)
             , text = Maybe.withDefault "" <| Dict.get (String.fromInt id) existingData
             , placeholder = Nothing
