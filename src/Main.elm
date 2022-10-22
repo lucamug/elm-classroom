@@ -73,8 +73,8 @@ type alias PermanentState =
     , attendees : Dict.Dict String String
     , invitations : Dict.Dict String String
     , invitationTemplate : String
-    , frames : Dict.Dict String String
-    , frameTemplate : String
+    , previews : Dict.Dict String String
+    , previewTemplate : String
     , title : String
     }
 
@@ -92,16 +92,44 @@ locationHrefToPermanentState locationHref =
         |> Result.withDefault initPermanentState
 
 
+initSize : { x : number, y : number1 }
+initSize =
+    { x = 4, y = 3 }
+
+
+initDict : String -> Dict.Dict String String
+initDict prefix =
+    Dict.fromList <| List.indexedMap (\index _ -> ( String.fromInt index, prefix ++ String.fromInt index )) (List.repeat ((initSize.x * initSize.y) + 1) ())
+
+
+titleText : String
+titleText =
+    "Elm Classroom"
+
+
 initPermanentState : PermanentState
 initPermanentState =
-    { x = "4"
-    , y = "3"
+    { x = String.fromInt initSize.x
+    , y = String.fromInt initSize.y
+    , attendees = initDict "Attendee "
+    , invitations = initDict "invitation_"
+    , invitationTemplate = "https://example.com/?invitation={id}"
+    , previews = initDict "preview_"
+    , previewTemplate = "https://example.com/?preview={id}"
+    , title = titleText
+    }
+
+
+initPermanentStateEmpty : PermanentState
+initPermanentStateEmpty =
+    { x = String.fromInt initSize.x
+    , y = String.fromInt initSize.y
     , attendees = Dict.empty
     , invitations = Dict.empty
     , invitationTemplate = ""
-    , frames = Dict.empty
-    , frameTemplate = ""
-    , title = "Elm Classroom"
+    , previews = Dict.empty
+    , previewTemplate = ""
+    , title = titleText
     }
 
 
@@ -130,14 +158,14 @@ type Modality
 codecPermanentState : Codec.Codec PermanentState
 codecPermanentState =
     Codec.object
-        (\x y attendees invitations invitationTemplate frames frameTemplate title ->
+        (\x y attendees invitations invitationTemplate previews previewTemplate title ->
             { x = x
             , y = y
             , attendees = attendees
             , invitations = invitations
             , invitationTemplate = invitationTemplate
-            , frames = frames
-            , frameTemplate = frameTemplate
+            , previews = previews
+            , previewTemplate = previewTemplate
             , title = title
             }
         )
@@ -146,8 +174,8 @@ codecPermanentState =
         |> Codec.field "a" .attendees (Codec.dict Codec.string)
         |> Codec.field "b" .invitations (Codec.dict Codec.string)
         |> Codec.field "c" .invitationTemplate Codec.string
-        |> Codec.field "d" .frames (Codec.dict Codec.string)
-        |> Codec.field "e" .frameTemplate Codec.string
+        |> Codec.field "d" .previews (Codec.dict Codec.string)
+        |> Codec.field "e" .previewTemplate Codec.string
         |> Codec.field "f" .title Codec.string
         |> Codec.buildObject
 
@@ -155,6 +183,14 @@ codecPermanentState =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        MsgDeleteAll ->
+            ( { model | permanentState = initPermanentStateEmpty }
+            , Cmd.batch
+                [ pushUrl { sendItBack = False, url = buidlUrl model.locationHref initPermanentStateEmpty }
+                , changeMeta { content = initPermanentStateEmpty.title, fieldName = "innerHTML", querySelector = "title" }
+                ]
+            )
+
         MsgKeypress char ->
             if char == "Escape" then
                 ( { model | modality = ModalityNormal }, Cmd.none )
@@ -186,14 +222,14 @@ update msg model =
                         ValueInvitation ->
                             { permanentState | invitations = Dict.insert id value permanentState.invitations }
 
-                        ValueFrame ->
-                            { permanentState | frames = Dict.insert id value permanentState.frames }
+                        ValuePreview ->
+                            { permanentState | previews = Dict.insert id value permanentState.previews }
 
                         ValueInvitationTemplate ->
                             { permanentState | invitationTemplate = value }
 
-                        ValueFrameTemplate ->
-                            { permanentState | frameTemplate = value }
+                        ValuePreviewTemplate ->
+                            { permanentState | previewTemplate = value }
 
                         ValueTitle ->
                             { permanentState | title = value }
@@ -223,16 +259,17 @@ type Msg
     | MsgChangeModality Modality
     | MsgUrlChanged String
     | MsgKeypress String
+    | MsgDeleteAll
 
 
 type Value
     = ValueAttendee
     | ValueInvitation
-    | ValueFrame
+    | ValuePreview
     | ValueX
     | ValueY
     | ValueInvitationTemplate
-    | ValueFrameTemplate
+    | ValuePreviewTemplate
     | ValueTitle
 
 
@@ -245,7 +282,7 @@ menuAttrs : List (Attribute msg)
 menuAttrs =
     [ spacing 8
     , Font.color primaryColor
-    , Background.color <| rgba 1 0 1 0.5
+    , Background.color <| rgba 1 1 1 0.5
     , Border.rounded 10
     , Border.width 1
     , padding 5
@@ -263,9 +300,9 @@ buttonEdit =
     Input.button [] { label = el [] <| html <| Material.Icons.edit iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityEditing }
 
 
-buttonInvitation : Element msg
-buttonInvitation =
-    newTabLink [] { url = "TODO", label = el [] <| html <| Material.Icons.open_in_new iconSize Material.Icons.Types.Inherit }
+buttonInvitation : Model -> Int -> Element msg
+buttonInvitation model id =
+    newTabLink [] { url = urlInvitation model id, label = el [] <| html <| Material.Icons.open_in_new iconSize Material.Icons.Types.Inherit }
 
 
 buttonSettings : Element Msg
@@ -289,11 +326,11 @@ iconMenuLeft model maybeId =
 
                 Just id ->
                     []
-                        ++ [ el [ Font.size 26, Font.bold, paddingEach { top = 0, right = 10, bottom = 0, left = 10 } ] (text <| String.fromInt id) ]
+                        ++ [ el [ Font.size 24, Font.bold, paddingEach { top = 0, right = 10, bottom = 0, left = 10 } ] (text <| String.fromInt id) ]
                         ++ (case model.modality of
                                 ModalityNormal ->
                                     [ buttonEdit
-                                    , buttonInvitation
+                                    , buttonInvitation model id
                                     , buttonSettings
                                     ]
 
@@ -302,19 +339,20 @@ iconMenuLeft model maybeId =
 
                                 ModalityFullscreen id_ ->
                                     [ buttonEdit
-                                    , buttonInvitation
+                                    , buttonInvitation model id
                                     , buttonSettings
                                     ]
 
                                 ModalitySettings ->
                                     [ buttonSave ]
                            )
-                        ++ [ el [ Font.size 20, moveDown 3 ] <|
-                                text <|
-                                    Maybe.withDefault "" <|
-                                        Dict.get (String.fromInt id) model.permanentState.attendees
-                           ]
+                        ++ [ el [ Font.size 20, moveDown 3 ] <| text <| getValue id model.permanentState.attendees ]
             )
+
+
+getValue : Int -> Dict.Dict String String -> String
+getValue id values =
+    Maybe.withDefault "" <| Dict.get (String.fromInt id) values
 
 
 iconMenuRight : Model -> Maybe Int -> Attribute Msg
@@ -358,21 +396,18 @@ attrsFullscreen model maybeId =
 
 viewFullscreen : Model -> Int -> Element Msg
 viewFullscreen model id =
-    el
-        (attrsFullscreen model (Just id))
-        (html <|
-            Html.iframe
-                [ Html.Attributes.style "border" "0"
-                , Html.Attributes.style "height" "100%"
-                , Html.Attributes.style "background" "#4a0"
+    el (attrsFullscreen model (Just id)) (iframe model id)
 
-                -- , Html.Attributes.src "https://07-elm-boot.lucamug.repl.co/"
-                , Html.Attributes.src "https://example.com/"
 
-                -- , Html.Attributes.src "https://repubblica.it/"
-                ]
-                []
-        )
+iframe : Model -> Int -> Element msg
+iframe model id =
+    html <|
+        Html.iframe
+            [ Html.Attributes.style "border" "0"
+            , Html.Attributes.style "height" "100%"
+            , Html.Attributes.src <| urlPreview model id
+            ]
+            []
 
 
 spacingSize : Int
@@ -444,7 +479,7 @@ view model =
                         ]
                         (List.indexedMap
                             (\indexX _ ->
-                                viewFrame model ((indexX + 1) + (indexY * x))
+                                viewPreview model ((indexX + 1) + (indexY * x))
                             )
                             (List.repeat x 0)
                         )
@@ -453,12 +488,12 @@ view model =
             )
 
 
-viewFrame : Model -> Int -> Element Msg
-viewFrame model id =
+viewPreview : Model -> Int -> Element Msg
+viewPreview model id =
     el
         ([ width <| fill
          , height <| fill
-         , Background.color <| rgb 0 0.8 0
+         , Background.color <| rgb 0.8 0.8 0.8
          ]
             ++ (case model.modality of
                     ModalityEditing ->
@@ -473,7 +508,7 @@ viewFrame model id =
                             <|
                                 [ inputField { existingData = model.permanentState.attendees, id = id, label = "Attendee", valueType = ValueAttendee }
                                 , inputField { existingData = model.permanentState.invitations, id = id, label = "Invitation", valueType = ValueInvitation }
-                                , inputField { existingData = model.permanentState.frames, id = id, label = "Frame", valueType = ValueFrame }
+                                , inputField { existingData = model.permanentState.previews, id = id, label = "Preview", valueType = ValuePreview }
                                 ]
                         ]
 
@@ -483,19 +518,23 @@ viewFrame model id =
             ++ [ iconMenuLeft model (Just id) ]
             ++ [ iconMenuRight model (Just id) ]
         )
-    <|
-        html <|
-            Html.iframe
-                [ Html.Attributes.style "border" "0"
-                , Html.Attributes.style "height" "100%"
-                , Html.Attributes.style "background" "#4a0"
+        (iframe model id)
 
-                -- , Html.Attributes.src "https://07-elm-boot.lucamug.repl.co/"
-                , Html.Attributes.src "https://example.com/"
 
-                -- , Html.Attributes.src "https://repubblica.it/"
-                ]
-                []
+urlPreview : Model -> Int -> String
+urlPreview model id =
+    String.replace
+        "{id}"
+        (getValue id model.permanentState.previews)
+        model.permanentState.previewTemplate
+
+
+urlInvitation : Model -> Int -> String
+urlInvitation model id =
+    String.replace
+        "{id}"
+        (getValue id model.permanentState.invitations)
+        model.permanentState.invitationTemplate
 
 
 viewEditing : Model -> Element Msg
@@ -520,7 +559,26 @@ viewEditing model =
             , paragraph [ Font.bold ] [ text "Templates" ]
             , paragraph [] [ text "Templates can be used both for the Invitation URL and the Preview URL." ]
             , inputField2 { id = 0, label = "Invitation", valueType = ValueInvitationTemplate } model.permanentState.invitationTemplate
-            , inputField2 { id = 0, label = "Frame", valueType = ValueFrameTemplate } model.permanentState.frameTemplate
+            , inputField2 { id = 0, label = "Preview", valueType = ValuePreviewTemplate } model.permanentState.previewTemplate
+            , column
+                [ Border.width 1
+                , Border.rounded 10
+                , Border.color <| rgb 0.8 0 0
+                , Background.color <| rgb 1 0.9 0.9
+                , Font.color <| rgb 0.8 0 0
+                , padding 20
+                , width fill
+                , spacing 20
+                ]
+                [ paragraph [ Font.bold ] [ text "Dangerous area" ]
+                , Input.button
+                    [ padding 10
+                    , Border.rounded 10
+                    , Font.color <| rgb 1 1 1
+                    , Background.color <| rgb 0.8 0 0
+                    ]
+                    { label = text "Reset All", onPress = Just MsgDeleteAll }
+                ]
             ]
         )
 
@@ -546,9 +604,7 @@ inputField2 args textValue =
 
 inputField : { existingData : Dict.Dict String String, id : Int, label : String, valueType : Value } -> Element Msg
 inputField args =
-    inputField2
-        args
-        (Maybe.withDefault "" <| Dict.get (String.fromInt args.id) args.existingData)
+    inputField2 args (getValue args.id args.existingData)
 
 
 permanentStateToXY : { a | x : String, y : String } -> { x : Int, y : Int }
