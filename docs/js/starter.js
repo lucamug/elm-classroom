@@ -20,3 +20,9 @@ app.ports.pushUrl.subscribe(function(args) {
         app.ports.onUrlChange.send(location.href);
     }
 });
+
+// Updates HTML outside Elm responsability
+app.ports.changeMeta.subscribe((args) => {
+	const element = document.querySelector(args.querySelector);
+	if (element) {element[args.fieldName] = args.content;}
+});
