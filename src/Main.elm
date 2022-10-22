@@ -75,6 +75,8 @@ type alias PermanentState =
     , invitationTemplate : String
     , previews : Dict.Dict String String
     , previewTemplate : String
+    , workspaceTemplate : String
+    , userId : String
     , title : String
     }
 
@@ -89,7 +91,7 @@ locationHrefToPermanentState locationHref =
         |> Base64.decode
         |> Result.withDefault ""
         |> Codec.decodeString codecPermanentState
-        |> Result.withDefault initPermanentState
+        |> Result.withDefault initPermanentStateExample
 
 
 initSize : { x : number, y : number1 }
@@ -107,15 +109,74 @@ titleText =
     "Elm Classroom"
 
 
-initPermanentState : PermanentState
-initPermanentState =
+initPermanentStateExample : PermanentState
+initPermanentStateExample =
     { x = String.fromInt initSize.x
     , y = String.fromInt initSize.y
     , attendees = initDict "Attendee "
     , invitations = initDict "invitation_"
-    , invitationTemplate = "https://example.com/?invitation={id}"
+    , invitationTemplate = "https://example.com/?invitation={id}&userid={userId}"
     , previews = initDict "preview_"
-    , previewTemplate = "https://example.com/?preview={id}"
+    , previewTemplate = "https://example.com/?preview={id}&userid={userId}"
+    , workspaceTemplate = "https://example.com/?preview={id}&userid={userId}"
+    , userId = "exampleId"
+    , title = titleText
+    }
+
+
+initPermanentStateReplit : PermanentState
+initPermanentStateReplit =
+    { x = String.fromInt initSize.x
+    , y = String.fromInt initSize.y
+    , attendees =
+        Dict.fromList
+            [ ( "1", "Mary" )
+            , ( "2", "James" )
+            , ( "3", "Jennifer" )
+            , ( "4", "Robert" )
+            , ( "5", "Linda" )
+            , ( "6", "John" )
+            , ( "7", "Susan" )
+            , ( "8", "David" )
+            , ( "9", "Jessica" )
+            , ( "10", "Daniel" )
+            , ( "11", "Karen" )
+            , ( "12", "Paul" )
+            ]
+    , invitations =
+        Dict.fromList
+            [ ( "1", "cdxnggkyhb" )
+            , ( "2", "ziibbtpuwy" )
+            , ( "3", "blszhgxucp" )
+            , ( "4", "ycjqbmzrvl" )
+            , ( "5", "rbkrqvoedm" )
+            , ( "6", "ksywffdqju" )
+            , ( "7", "nscbimakhl" )
+            , ( "8", "brybqovyqc" )
+            , ( "9", "uijywdikhf" )
+            , ( "10", "wgybsatrfv" )
+            , ( "11", "geqplmcfqq" )
+            , ( "12", "fcprvieuda" )
+            ]
+    , invitationTemplate = "https://replit.com/join/{id}-{userId}"
+    , previews =
+        Dict.fromList
+            [ ( "1", "01" )
+            , ( "2", "02" )
+            , ( "3", "03" )
+            , ( "4", "04" )
+            , ( "5", "05" )
+            , ( "6", "06" )
+            , ( "7", "07" )
+            , ( "8", "08" )
+            , ( "9", "09" )
+            , ( "10", "10" )
+            , ( "11", "11" )
+            , ( "12", "12" )
+            ]
+    , previewTemplate = "https://{id}.{userId}.repl.co/"
+    , workspaceTemplate = "https://replit.com/@{userId}/{id}#src/Main.elm    "
+    , userId = "lucamug"
     , title = titleText
     }
 
@@ -129,6 +190,8 @@ initPermanentStateEmpty =
     , invitationTemplate = ""
     , previews = Dict.empty
     , previewTemplate = ""
+    , workspaceTemplate = ""
+    , userId = ""
     , title = titleText
     }
 
@@ -158,7 +221,7 @@ type Modality
 codecPermanentState : Codec.Codec PermanentState
 codecPermanentState =
     Codec.object
-        (\x y attendees invitations invitationTemplate previews previewTemplate title ->
+        (\x y attendees invitations invitationTemplate previews previewTemplate workspaceTemplate userId title ->
             { x = x
             , y = y
             , attendees = attendees
@@ -166,6 +229,8 @@ codecPermanentState =
             , invitationTemplate = invitationTemplate
             , previews = previews
             , previewTemplate = previewTemplate
+            , workspaceTemplate = workspaceTemplate
+            , userId = userId
             , title = title
             }
         )
@@ -176,18 +241,20 @@ codecPermanentState =
         |> Codec.field "c" .invitationTemplate Codec.string
         |> Codec.field "d" .previews (Codec.dict Codec.string)
         |> Codec.field "e" .previewTemplate Codec.string
-        |> Codec.field "f" .title Codec.string
+        |> Codec.field "f" .workspaceTemplate Codec.string
+        |> Codec.field "g" .userId Codec.string
+        |> Codec.field "h" .title Codec.string
         |> Codec.buildObject
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        MsgDeleteAll ->
-            ( { model | permanentState = initPermanentStateEmpty }
+        MsgLoad permanentsState ->
+            ( { model | permanentState = permanentsState }
             , Cmd.batch
-                [ pushUrl { sendItBack = False, url = buidlUrl model.locationHref initPermanentStateEmpty }
-                , changeMeta { content = initPermanentStateEmpty.title, fieldName = "innerHTML", querySelector = "title" }
+                [ pushUrl { sendItBack = False, url = buidlUrl model.locationHref permanentsState }
+                , changeMeta { content = permanentsState.title, fieldName = "innerHTML", querySelector = "title" }
                 ]
             )
 
@@ -231,6 +298,12 @@ update msg model =
                         ValuePreviewTemplate ->
                             { permanentState | previewTemplate = value }
 
+                        ValueWorkspaceTemplate ->
+                            { permanentState | workspaceTemplate = value }
+
+                        ValueUserId ->
+                            { permanentState | userId = value }
+
                         ValueTitle ->
                             { permanentState | title = value }
             in
@@ -259,7 +332,7 @@ type Msg
     | MsgChangeModality Modality
     | MsgUrlChanged String
     | MsgKeypress String
-    | MsgDeleteAll
+    | MsgLoad PermanentState
 
 
 type Value
@@ -270,6 +343,8 @@ type Value
     | ValueY
     | ValueInvitationTemplate
     | ValuePreviewTemplate
+    | ValueWorkspaceTemplate
+    | ValueUserId
     | ValueTitle
 
 
@@ -523,18 +598,16 @@ viewPreview model id =
 
 urlPreview : Model -> Int -> String
 urlPreview model id =
-    String.replace
-        "{id}"
-        (getValue id model.permanentState.previews)
-        model.permanentState.previewTemplate
+    model.permanentState.previewTemplate
+        |> String.replace "{id}" (getValue id model.permanentState.previews)
+        |> String.replace "{userId}" model.permanentState.userId
 
 
 urlInvitation : Model -> Int -> String
 urlInvitation model id =
-    String.replace
-        "{id}"
-        (getValue id model.permanentState.invitations)
-        model.permanentState.invitationTemplate
+    model.permanentState.invitationTemplate
+        |> String.replace "{id}" (getValue id model.permanentState.invitations)
+        |> String.replace "{userId}" model.permanentState.userId
 
 
 viewEditing : Model -> Element Msg
@@ -556,10 +629,12 @@ viewEditing model =
                 [ inputField2 { id = 0, label = "X", valueType = ValueX } model.permanentState.x
                 , inputField2 { id = 0, label = "Y", valueType = ValueY } model.permanentState.y
                 ]
+            , inputField2 { id = 0, label = "User ID", valueType = ValueUserId } model.permanentState.userId
             , paragraph [ Font.bold ] [ text "Templates" ]
             , paragraph [] [ text "Templates can be used both for the Invitation URL and the Preview URL." ]
             , inputField2 { id = 0, label = "Invitation", valueType = ValueInvitationTemplate } model.permanentState.invitationTemplate
             , inputField2 { id = 0, label = "Preview", valueType = ValuePreviewTemplate } model.permanentState.previewTemplate
+            , inputField2 { id = 0, label = "Workspace", valueType = ValueWorkspaceTemplate } model.permanentState.workspaceTemplate
             , column
                 [ Border.width 1
                 , Border.rounded 10
@@ -571,13 +646,19 @@ viewEditing model =
                 , spacing 20
                 ]
                 [ paragraph [ Font.bold ] [ text "Dangerous area" ]
-                , Input.button
-                    [ padding 10
-                    , Border.rounded 10
-                    , Font.color <| rgb 1 1 1
-                    , Background.color <| rgb 0.8 0 0
+                , let
+                    buttonAttrs =
+                        [ padding 10
+                        , Border.rounded 10
+                        , Font.color <| rgb 1 1 1
+                        , Background.color <| rgb 0.8 0 0
+                        ]
+                  in
+                  row [ spacing 20 ]
+                    [ Input.button buttonAttrs { label = text "Load Example", onPress = Just <| MsgLoad initPermanentStateExample }
+                    , Input.button buttonAttrs { label = text "Load Empty", onPress = Just <| MsgLoad initPermanentStateEmpty }
+                    , Input.button buttonAttrs { label = text "Load Replit", onPress = Just <| MsgLoad initPermanentStateReplit }
                     ]
-                    { label = text "Reset All", onPress = Just MsgDeleteAll }
                 ]
             ]
         )
