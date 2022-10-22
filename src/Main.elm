@@ -20,14 +20,6 @@ import String.Extra
 import Url
 
 
-
--- https://replit.com/@lucamug/07-elm-boot
--- https://replit.com/join/nscbimakhl-lucamug
---
--- https://replit.com/join/cdxnggkyhb-lucamug
--- https://01.lucamug.repl.co/
-
-
 port pushUrl : { url : String, sendItBack : Bool } -> Cmd msg
 
 
@@ -72,8 +64,8 @@ type alias PermanentState =
     , y : String
     , attendees : Dict.Dict String String
     , invitations : Dict.Dict String String
+    , workspaces : Dict.Dict String String
     , invitationTemplate : String
-    , previews : Dict.Dict String String
     , previewTemplate : String
     , workspaceTemplate : String
     , userId : String
@@ -115,8 +107,8 @@ initPermanentStateExample =
     , y = String.fromInt initSize.y
     , attendees = initDict "Attendee "
     , invitations = initDict "invitation_"
+    , workspaces = initDict "workspaces_"
     , invitationTemplate = "https://example.com/?invitation={id}&userid={userId}"
-    , previews = initDict "preview_"
     , previewTemplate = "https://example.com/?preview={id}&userid={userId}"
     , workspaceTemplate = "https://example.com/?preview={id}&userid={userId}"
     , userId = "exampleId"
@@ -128,56 +120,14 @@ initPermanentStateReplit : PermanentState
 initPermanentStateReplit =
     { x = String.fromInt initSize.x
     , y = String.fromInt initSize.y
-    , attendees =
-        Dict.fromList
-            [ ( "1", "Mary" )
-            , ( "2", "James" )
-            , ( "3", "Jennifer" )
-            , ( "4", "Robert" )
-            , ( "5", "Linda" )
-            , ( "6", "John" )
-            , ( "7", "Susan" )
-            , ( "8", "David" )
-            , ( "9", "Jessica" )
-            , ( "10", "Daniel" )
-            , ( "11", "Karen" )
-            , ( "12", "Paul" )
-            ]
-    , invitations =
-        Dict.fromList
-            [ ( "1", "cdxnggkyhb" )
-            , ( "2", "ziibbtpuwy" )
-            , ( "3", "blszhgxucp" )
-            , ( "4", "ycjqbmzrvl" )
-            , ( "5", "rbkrqvoedm" )
-            , ( "6", "ksywffdqju" )
-            , ( "7", "nscbimakhl" )
-            , ( "8", "brybqovyqc" )
-            , ( "9", "uijywdikhf" )
-            , ( "10", "wgybsatrfv" )
-            , ( "11", "geqplmcfqq" )
-            , ( "12", "fcprvieuda" )
-            ]
+    , attendees = Dict.fromList [ ( "1", "Mary" ), ( "2", "James" ), ( "3", "Jennifer" ), ( "4", "Robert" ), ( "5", "Linda" ), ( "6", "John" ), ( "7", "Susan" ), ( "8", "David" ), ( "9", "Jessica" ), ( "10", "Daniel" ), ( "11", "Karen" ), ( "12", "Paul" ) ]
+    , invitations = Dict.fromList [ ( "1", "cdxnggkyhb" ), ( "2", "ziibbtpuwy" ), ( "3", "blszhgxucp" ), ( "4", "ycjqbmzrvl" ), ( "5", "rbkrqvoedm" ), ( "6", "ksywffdqju" ), ( "7", "nscbimakhl" ), ( "8", "brybqovyqc" ), ( "9", "uijywdikhf" ), ( "10", "wgybsatrfv" ), ( "11", "geqplmcfqq" ), ( "12", "fcprvieuda" ) ]
+    , workspaces = Dict.fromList [ ( "1", "01" ), ( "2", "02" ), ( "3", "03" ), ( "4", "04" ), ( "5", "05" ), ( "6", "06" ), ( "7", "07" ), ( "8", "08" ), ( "9", "09" ), ( "10", "10" ), ( "11", "11" ), ( "12", "12" ) ]
     , invitationTemplate = "https://replit.com/join/{id}-{userId}"
-    , previews =
-        Dict.fromList
-            [ ( "1", "01" )
-            , ( "2", "02" )
-            , ( "3", "03" )
-            , ( "4", "04" )
-            , ( "5", "05" )
-            , ( "6", "06" )
-            , ( "7", "07" )
-            , ( "8", "08" )
-            , ( "9", "09" )
-            , ( "10", "10" )
-            , ( "11", "11" )
-            , ( "12", "12" )
-            ]
     , previewTemplate = "https://{id}.{userId}.repl.co/"
     , workspaceTemplate = "https://replit.com/@{userId}/{id}#src/Main.elm    "
     , userId = "lucamug"
-    , title = titleText
+    , title = "Functional Programming with Elm"
     }
 
 
@@ -187,8 +137,8 @@ initPermanentStateEmpty =
     , y = String.fromInt initSize.y
     , attendees = Dict.empty
     , invitations = Dict.empty
+    , workspaces = Dict.empty
     , invitationTemplate = ""
-    , previews = Dict.empty
     , previewTemplate = ""
     , workspaceTemplate = ""
     , userId = ""
@@ -221,13 +171,13 @@ type Modality
 codecPermanentState : Codec.Codec PermanentState
 codecPermanentState =
     Codec.object
-        (\x y attendees invitations invitationTemplate previews previewTemplate workspaceTemplate userId title ->
+        (\x y attendees invitations invitationTemplate workspaces previewTemplate workspaceTemplate userId title ->
             { x = x
             , y = y
             , attendees = attendees
             , invitations = invitations
             , invitationTemplate = invitationTemplate
-            , previews = previews
+            , workspaces = workspaces
             , previewTemplate = previewTemplate
             , workspaceTemplate = workspaceTemplate
             , userId = userId
@@ -239,7 +189,7 @@ codecPermanentState =
         |> Codec.field "a" .attendees (Codec.dict Codec.string)
         |> Codec.field "b" .invitations (Codec.dict Codec.string)
         |> Codec.field "c" .invitationTemplate Codec.string
-        |> Codec.field "d" .previews (Codec.dict Codec.string)
+        |> Codec.field "d" .workspaces (Codec.dict Codec.string)
         |> Codec.field "e" .previewTemplate Codec.string
         |> Codec.field "f" .workspaceTemplate Codec.string
         |> Codec.field "g" .userId Codec.string
@@ -289,8 +239,8 @@ update msg model =
                         ValueInvitation ->
                             { permanentState | invitations = Dict.insert id value permanentState.invitations }
 
-                        ValuePreview ->
-                            { permanentState | previews = Dict.insert id value permanentState.previews }
+                        ValueWorkspace ->
+                            { permanentState | workspaces = Dict.insert id value permanentState.workspaces }
 
                         ValueInvitationTemplate ->
                             { permanentState | invitationTemplate = value }
@@ -338,7 +288,7 @@ type Msg
 type Value
     = ValueAttendee
     | ValueInvitation
-    | ValuePreview
+    | ValueWorkspace
     | ValueX
     | ValueY
     | ValueInvitationTemplate
@@ -583,7 +533,7 @@ viewPreview model id =
                             <|
                                 [ inputField { existingData = model.permanentState.attendees, id = id, label = "Attendee", valueType = ValueAttendee }
                                 , inputField { existingData = model.permanentState.invitations, id = id, label = "Invitation", valueType = ValueInvitation }
-                                , inputField { existingData = model.permanentState.previews, id = id, label = "Preview", valueType = ValuePreview }
+                                , inputField { existingData = model.permanentState.workspaces, id = id, label = "Workspace", valueType = ValueWorkspace }
                                 ]
                         ]
 
@@ -598,16 +548,24 @@ viewPreview model id =
 
 urlPreview : Model -> Int -> String
 urlPreview model id =
-    model.permanentState.previewTemplate
-        |> String.replace "{id}" (getValue id model.permanentState.previews)
-        |> String.replace "{userId}" model.permanentState.userId
+    urlBuilder { id = id, template = model.permanentState.previewTemplate, userId = model.permanentState.userId, values = model.permanentState.workspaces }
 
 
 urlInvitation : Model -> Int -> String
 urlInvitation model id =
-    model.permanentState.invitationTemplate
-        |> String.replace "{id}" (getValue id model.permanentState.invitations)
-        |> String.replace "{userId}" model.permanentState.userId
+    urlBuilder { id = id, template = model.permanentState.invitationTemplate, userId = model.permanentState.userId, values = model.permanentState.invitations }
+
+
+urlWorkspace : Model -> Int -> String
+urlWorkspace model id =
+    urlBuilder { id = id, template = model.permanentState.workspaceTemplate, userId = model.permanentState.userId, values = model.permanentState.workspaces }
+
+
+urlBuilder : { id : Int, template : String, userId : String, values : Dict.Dict String String } -> String
+urlBuilder { userId, id, values, template } =
+    template
+        |> String.replace "{id}" (getValue id values)
+        |> String.replace "{userId}" userId
 
 
 viewEditing : Model -> Element Msg
