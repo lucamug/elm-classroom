@@ -47,8 +47,13 @@ subscriptions _ =
         ]
 
 
+type alias Env =
+    { commitHash : String }
+
+
 type alias Flags =
     { locationHref : String
+    , env : Env
     }
 
 
@@ -56,6 +61,7 @@ type alias Model =
     { permanentState : PermanentState
     , modality : Modality
     , locationHref : String
+    , env : Env
     }
 
 
@@ -156,6 +162,7 @@ init flags =
     ( { permanentState = permanentState
       , modality = ModalityNormal
       , locationHref = flags.locationHref
+      , env = flags.env
       }
     , changeMeta { content = permanentState.title, fieldName = "innerHTML", querySelector = "title" }
     )
@@ -310,7 +317,7 @@ menuAttrs =
     , Background.color <| rgba 1 1 1 0.8
     , Border.rounded 10
     , Border.width 1
-    , padding 5
+    , paddingEach { top = 5, right = 10, bottom = 5, left = 10 }
     , moveDown 10
     ]
 
@@ -322,7 +329,7 @@ iconSize =
 
 buttonEdit : Element Msg
 buttonEdit =
-    Input.button [] { label = el [] <| html <| Material.Icons.edit iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityEditing }
+    Input.button [ htmlAttribute <| Html.Attributes.title "Edit" ] { label = el [] <| html <| Material.Icons.edit iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityEditing }
 
 
 buttonInvitation : Model -> Int -> Element msg
@@ -337,22 +344,22 @@ buttonWorkspace model id =
 
 buttonSettings : Element Msg
 buttonSettings =
-    Input.button [] { label = el [] <| html <| Material.Icons.settings iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalitySettings }
+    Input.button [ htmlAttribute <| Html.Attributes.title "Settings" ] { label = el [] <| html <| Material.Icons.settings iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalitySettings }
 
 
 buttonSave : Element Msg
 buttonSave =
-    Input.button [] { label = el [] <| html <| Material.Icons.save iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityNormal }
+    Input.button [ htmlAttribute <| Html.Attributes.title "Save" ] { label = el [] <| html <| Material.Icons.save iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityNormal }
 
 
 buttonFullScreen : Int -> Element Msg
 buttonFullScreen id =
-    Input.button [] { label = el [] <| html <| Material.Icons.open_in_full iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityFullscreen id }
+    Input.button [ htmlAttribute <| Html.Attributes.title "Full screen" ] { label = el [] <| html <| Material.Icons.open_in_full iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityFullscreen id }
 
 
 buttonFullScreenClose : Element Msg
 buttonFullScreenClose =
-    Input.button [] { label = el [] <| html <| Material.Icons.close_fullscreen iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityNormal }
+    Input.button [] { label = el [ htmlAttribute <| Html.Attributes.title "Close full screen" ] <| html <| Material.Icons.close_fullscreen iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityNormal }
 
 
 iconMenuLeft : Model -> Maybe Int -> Attribute Msg
@@ -362,11 +369,13 @@ iconMenuLeft model maybeId =
             (menuAttrs ++ [ moveRight 10 ])
             (case maybeId of
                 Nothing ->
-                    []
+                    [ el [ Font.size 24 ] <| text "Settings"
+                    , buttonSave
+                    ]
 
                 Just id ->
                     []
-                        ++ [ el [ Font.size 24, Font.bold, paddingEach { top = 0, right = 10, bottom = 0, left = 10 } ] (text <| String.fromInt id) ]
+                        ++ [ el [ Font.size 24, Font.bold, moveDown 1 ] (text <| String.fromInt id) ]
                         ++ (case model.modality of
                                 ModalityNormal ->
                                     [ buttonInvitation model id ]
@@ -379,7 +388,7 @@ iconMenuLeft model maybeId =
                                     ]
 
                                 ModalitySettings ->
-                                    [ buttonSave ]
+                                    []
                            )
                         ++ [ el [ Font.size 20, moveDown 1.5 ] <| text <| getValue id model.permanentState.attendees ]
             )
@@ -392,7 +401,7 @@ iconMenuRight model maybeId =
             (menuAttrs ++ [ alignRight, moveLeft 10 ])
             (case maybeId of
                 Nothing ->
-                    []
+                    [ buttonSave ]
 
                 Just id ->
                     []
@@ -588,63 +597,70 @@ viewEditing : Model -> Element Msg
 viewEditing model =
     el
         (attrsFullscreen model Nothing)
-        (column [ width (fill |> maximum 800), centerX, padding 50, spacing 20, scrollbars ]
-            [ paragraph [ Font.center, Font.size 30 ] [ text "Classroom" ]
-            , text ""
-            , paragraph []
-                [ el [ Font.bold ] <| text "Classroom"
-                , text " helps to setup a multiscreen view of the attendees in a workshop."
-                ]
-            , paragraph [] [ text "Use as Title the name of the workshop and other notes. It will be used in the title of the page and it will appear in the Browser Bookmark and Browser History." ]
-            , inputField2 { id = 0, label = "Title", valueType = ValueTitle } model.permanentState.title
-            , paragraph [ Font.bold ] [ text "Size" ]
-            , paragraph [] [ text "You can specify the quantity of attendees. The largest supported size is 6 by 5." ]
-            , row [ width fill ]
-                [ inputField2 { id = 0, label = "X", valueType = ValueX } model.permanentState.x
-                , inputField2 { id = 0, label = "Y", valueType = ValueY } model.permanentState.y
-                ]
-            , inputField2 { id = 0, label = "User ID", valueType = ValueUserId } model.permanentState.userId
-            , paragraph [ Font.bold ] [ text "Templates" ]
-            , paragraph [] [ text "Templates can be used both for the Invitation URL and the Preview URL." ]
-            , inputField2 { id = 0, label = "Invitation", valueType = ValueInvitationTemplate } model.permanentState.invitationTemplate
-            , inputField2 { id = 0, label = "Preview", valueType = ValuePreviewTemplate } model.permanentState.previewTemplate
-            , inputField2 { id = 0, label = "Workspace", valueType = ValueWorkspaceTemplate } model.permanentState.workspaceTemplate
-            , column
-                [ Border.width 1
-                , Border.rounded 10
-                , Border.color <| rgb 0.8 0 0
-                , Background.color <| rgb 1 0.9 0.9
-                , Font.color <| rgb 0.8 0 0
-                , padding 20
-                , width fill
-                , spacing 20
-                ]
-                [ paragraph [ Font.bold ] [ text "Dangerous area" ]
-                , let
-                    buttonAttrs =
-                        [ padding 10
-                        , Border.rounded 10
-                        , Font.color <| rgb 1 1 1
-                        , Background.color <| rgb 0.8 0 0
+    <|
+        el [ width fill, scrollbars ] <|
+            column [ width (fill |> maximum 800), centerX, padding 50, spacing 20 ]
+                [ paragraph [ Font.center, Font.size 30 ] [ text "Classroom" ]
+                , text ""
+                , paragraph []
+                    [ el [ Font.bold ] <| text "Classroom"
+                    , text " helps to setup a multiscreen view of the attendees in a workshop."
+                    ]
+                , paragraph [] [ text "Use as Title the name of the workshop and other notes. It will be used in the title of the page and it will appear in the Browser Bookmark and Browser History." ]
+                , inputField2 { id = 0, label = "Title", valueType = ValueTitle } model.permanentState.title
+                , paragraph [ Font.bold ] [ text "Size" ]
+                , paragraph [] [ text "You can specify the quantity of attendees. The largest supported size is 6 by 5." ]
+                , row [ width fill ]
+                    [ inputField2 { id = 0, label = "X", valueType = ValueX } model.permanentState.x
+                    , inputField2 { id = 0, label = "Y", valueType = ValueY } model.permanentState.y
+                    ]
+                , inputField2 { id = 0, label = "User ID", valueType = ValueUserId } model.permanentState.userId
+                , paragraph [ Font.bold ] [ text "Templates" ]
+                , paragraph [] [ text "Templates can be used both for the Invitation URL and the Preview URL." ]
+                , inputField2 { id = 0, label = "Invitation", valueType = ValueInvitationTemplate } model.permanentState.invitationTemplate
+                , inputField2 { id = 0, label = "Preview", valueType = ValuePreviewTemplate } model.permanentState.previewTemplate
+                , inputField2 { id = 0, label = "Workspace", valueType = ValueWorkspaceTemplate } model.permanentState.workspaceTemplate
+                , column
+                    [ Border.width 1
+                    , Border.rounded 10
+                    , Border.color <| rgb 0.8 0 0
+                    , Background.color <| rgb 1 0.9 0.9
+                    , Font.color <| rgb 0.8 0 0
+                    , padding 20
+                    , width fill
+                    , spacing 20
+                    ]
+                    [ paragraph [ Font.bold ] [ text "Dangerous area" ]
+                    , let
+                        buttonAttrs =
+                            [ padding 10
+                            , Border.rounded 10
+                            , Font.color <| rgb 1 1 1
+                            , Background.color <| rgb 0.8 0 0
+                            ]
+                      in
+                      row [ spacing 20 ]
+                        [ Input.button buttonAttrs { label = text "Load Example", onPress = Just <| MsgLoad initPermanentStateExample }
+                        , Input.button buttonAttrs { label = text "Load Empty", onPress = Just <| MsgLoad initPermanentStateEmpty }
+                        , Input.button buttonAttrs { label = text "Load Replit", onPress = Just <| MsgLoad initPermanentStateReplit }
                         ]
-                  in
-                  row [ spacing 20 ]
-                    [ Input.button buttonAttrs { label = text "Load Example", onPress = Just <| MsgLoad initPermanentStateExample }
-                    , Input.button buttonAttrs { label = text "Load Empty", onPress = Just <| MsgLoad initPermanentStateEmpty }
-                    , Input.button buttonAttrs { label = text "Load Replit", onPress = Just <| MsgLoad initPermanentStateReplit }
+                    ]
+                , column
+                    [ Font.center
+                    , Font.size 14
+                    , Font.color <| rgba 0 0 0 0.5
+                    , spacing 10
+                    , width fill
+                    , paddingEach { top = 60, right = 0, bottom = 0, left = 0 }
+                    , width fill
+                    ]
+                    [ paragraph [] [ text <| "Commit " ++ model.env.commitHash ]
+                    , paragraph []
+                        [ text "Carefully crafted with Elm and "
+                        , el [ Font.color <| rgba 0.8 0.0 0.0 0.5, Font.size 16 ] <| text "♥"
+                        ]
                     ]
                 ]
-            , paragraph
-                [ Font.center
-                , Font.size 14
-                , width fill
-                , padding 10
-                ]
-                [ text "Carefully crafted with Elm and "
-                , el [ Font.color <| rgba 0.8 0.0 0.0 0.5, Font.size 16 ] <| text "♥"
-                ]
-            ]
-        )
 
 
 inputField2 : { a | id : Int, label : String, valueType : Value } -> String -> Element Msg
