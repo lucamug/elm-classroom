@@ -98,7 +98,7 @@ initDict prefix =
 
 titleText : String
 titleText =
-    "Elm Classroom"
+    "Classroom"
 
 
 initPermanentStateExample : PermanentState
@@ -307,7 +307,7 @@ menuAttrs : List (Attribute msg)
 menuAttrs =
     [ spacing 8
     , Font.color primaryColor
-    , Background.color <| rgba 1 1 1 0.5
+    , Background.color <| rgba 1 1 1 0.8
     , Border.rounded 10
     , Border.width 1
     , padding 5
@@ -327,7 +327,12 @@ buttonEdit =
 
 buttonInvitation : Model -> Int -> Element msg
 buttonInvitation model id =
-    newTabLink [] { url = urlInvitation model id, label = el [] <| html <| Material.Icons.open_in_new iconSize Material.Icons.Types.Inherit }
+    newTabLink [ htmlAttribute <| Html.Attributes.title "Open Workspace" ] { url = urlInvitation model id, label = el [] <| html <| Material.Icons.open_in_new iconSize Material.Icons.Types.Inherit }
+
+
+buttonWorkspace : Model -> Int -> Element msg
+buttonWorkspace model id =
+    newTabLink [ htmlAttribute <| Html.Attributes.title "Open Workspace" ] { url = urlInvitation model id, label = el [] <| html <| Material.Icons.space_dashboard iconSize Material.Icons.Types.Inherit }
 
 
 buttonSettings : Element Msg
@@ -338,6 +343,16 @@ buttonSettings =
 buttonSave : Element Msg
 buttonSave =
     Input.button [] { label = el [] <| html <| Material.Icons.save iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityNormal }
+
+
+buttonFullScreen : Int -> Element Msg
+buttonFullScreen id =
+    Input.button [] { label = el [] <| html <| Material.Icons.open_in_full iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityFullscreen id }
+
+
+buttonFullScreenClose : Element Msg
+buttonFullScreenClose =
+    Input.button [] { label = el [] <| html <| Material.Icons.close_fullscreen iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityNormal }
 
 
 iconMenuLeft : Model -> Maybe Int -> Attribute Msg
@@ -354,30 +369,20 @@ iconMenuLeft model maybeId =
                         ++ [ el [ Font.size 24, Font.bold, paddingEach { top = 0, right = 10, bottom = 0, left = 10 } ] (text <| String.fromInt id) ]
                         ++ (case model.modality of
                                 ModalityNormal ->
-                                    [ buttonEdit
-                                    , buttonInvitation model id
-                                    , buttonSettings
-                                    ]
+                                    [ buttonInvitation model id ]
 
                                 ModalityEditing ->
                                     [ buttonSave ]
 
                                 ModalityFullscreen id_ ->
-                                    [ buttonEdit
-                                    , buttonInvitation model id
-                                    , buttonSettings
+                                    [ buttonInvitation model id
                                     ]
 
                                 ModalitySettings ->
                                     [ buttonSave ]
                            )
-                        ++ [ el [ Font.size 20, moveDown 3 ] <| text <| getValue id model.permanentState.attendees ]
+                        ++ [ el [ Font.size 20, moveDown 1.5 ] <| text <| getValue id model.permanentState.attendees ]
             )
-
-
-getValue : Int -> Dict.Dict String String -> String
-getValue id values =
-    Maybe.withDefault "" <| Dict.get (String.fromInt id) values
 
 
 iconMenuRight : Model -> Maybe Int -> Attribute Msg
@@ -394,15 +399,26 @@ iconMenuRight model maybeId =
                         ++ (case model.modality of
                                 ModalityFullscreen int ->
                                     if int == id then
-                                        [ Input.button [] { label = el [] <| html <| Material.Icons.close_fullscreen iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityNormal } ]
+                                        [ buttonFullScreenClose ]
 
                                     else
-                                        [ Input.button [] { label = el [] <| html <| Material.Icons.open_in_full iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityFullscreen id } ]
+                                        [ buttonEdit
+                                        , buttonSettings
+                                        , buttonFullScreen id
+                                        ]
 
                                 _ ->
-                                    [ Input.button [] { label = el [] <| html <| Material.Icons.open_in_full iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalityFullscreen id } ]
+                                    [ buttonEdit
+                                    , buttonSettings
+                                    , buttonFullScreen id
+                                    ]
                            )
             )
+
+
+getValue : Int -> Dict.Dict String String -> String
+getValue id values =
+    Maybe.withDefault "" <| Dict.get (String.fromInt id) values
 
 
 attrsFullscreen : Model -> Maybe Int -> List (Attribute Msg)
@@ -617,6 +633,15 @@ viewEditing model =
                     , Input.button buttonAttrs { label = text "Load Empty", onPress = Just <| MsgLoad initPermanentStateEmpty }
                     , Input.button buttonAttrs { label = text "Load Replit", onPress = Just <| MsgLoad initPermanentStateReplit }
                     ]
+                ]
+            , paragraph
+                [ Font.center
+                , Font.size 14
+                , width fill
+                , padding 10
+                ]
+                [ text "Carefully crafted with Elm and "
+                , el [ Font.color <| rgba 0.8 0.0 0.0 0.5, Font.size 16 ] <| text "♥"
                 ]
             ]
         )

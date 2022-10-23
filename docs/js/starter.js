@@ -23,6 +23,6 @@ app.ports.pushUrl.subscribe(function(args) {
 
 // Updates HTML outside Elm responsability
 app.ports.changeMeta.subscribe((args) => {
-	const element = document.querySelector(args.querySelector);
+	var element = document.querySelector(args.querySelector);
 	if (element) {element[args.fieldName] = args.content;}
 });
