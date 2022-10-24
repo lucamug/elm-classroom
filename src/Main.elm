@@ -83,9 +83,8 @@ locationHrefToPermanentState : String -> PermanentState
 locationHrefToPermanentState locationHref =
     locationHref
         |> Url.fromString
-        |> Maybe.map .path
+        |> Maybe.andThen .query
         |> Maybe.withDefault ""
-        |> String.dropLeft 1
         |> Base64.decode
         |> Result.withDefault ""
         |> Codec.decodeString codecPermanentState
@@ -279,7 +278,7 @@ buidlUrl : String -> PermanentState -> String
 buidlUrl locationHref permanentState =
     locationHref
         |> Url.fromString
-        |> Maybe.map (\url -> { url | path = "/" ++ Base64.encode (Codec.encodeToString 0 codecPermanentState permanentState) })
+        |> Maybe.map (\url -> { url | query = Just <| Base64.encode (Codec.encodeToString 0 codecPermanentState permanentState) })
         |> Maybe.map Url.toString
         |> Maybe.withDefault locationHref
 
