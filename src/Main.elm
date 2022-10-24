@@ -31,9 +31,9 @@ main : Program Flags Model Msg
 main =
     Browser.element
         { init = init
-        , view = view
-        , update = update
         , subscriptions = subscriptions
+        , update = update
+        , view = view
         }
 
 
@@ -50,30 +50,28 @@ type alias Env =
 
 
 type alias Flags =
-    { locationHref : String
-    , env : Env
-    }
+    { env : Env, locationHref : String }
 
 
 type alias Model =
-    { permanentState : PermanentState
-    , modality : Modality
+    { env : Env
     , locationHref : String
-    , env : Env
+    , modality : Modality
+    , permanentState : PermanentState
     }
 
 
 type alias PermanentState =
-    { x : String
-    , y : String
-    , attendees : Dict.Dict String String
-    , invitations : Dict.Dict String String
-    , workspaces : Dict.Dict String String
+    { attendees : Dict.Dict String String
     , invitationTemplate : String
+    , invitations : Dict.Dict String String
     , previewTemplate : String
-    , workspaceTemplate : String
-    , userId : String
     , title : String
+    , userId : String
+    , workspaceTemplate : String
+    , workspaces : Dict.Dict String String
+    , x : String
+    , y : String
     }
 
 
@@ -106,46 +104,46 @@ titleText =
 
 initPermanentStateExample : PermanentState
 initPermanentStateExample =
-    { x = String.fromInt initSize.x
-    , y = String.fromInt initSize.y
-    , attendees = initDict "Attendee "
-    , invitations = initDict "invitation_"
-    , workspaces = initDict "workspaces_"
+    { attendees = initDict "Attendee "
     , invitationTemplate = "https://example.com/?invitation={id}&userid={userId}"
+    , invitations = initDict "invitation_"
     , previewTemplate = "https://example.com/?preview={id}&userid={userId}"
-    , workspaceTemplate = "https://example.com/?preview={id}&userid={userId}"
-    , userId = "exampleId"
     , title = titleText
+    , userId = "exampleId"
+    , workspaceTemplate = "https://example.com/?preview={id}&userid={userId}"
+    , workspaces = initDict "workspaces_"
+    , x = String.fromInt initSize.x
+    , y = String.fromInt initSize.y
     }
 
 
 initPermanentStateReplit : PermanentState
 initPermanentStateReplit =
-    { x = String.fromInt initSize.x
-    , y = String.fromInt initSize.y
-    , attendees = Dict.fromList [ ( "1", "Mary" ), ( "2", "James" ), ( "3", "Jennifer" ), ( "4", "Robert" ), ( "5", "Linda" ), ( "6", "John" ), ( "7", "Susan" ), ( "8", "David" ), ( "9", "Jessica" ), ( "10", "Daniel" ), ( "11", "Karen" ), ( "12", "Paul" ) ]
-    , invitations = Dict.fromList [ ( "1", "cdxnggkyhb" ), ( "2", "ziibbtpuwy" ), ( "3", "blszhgxucp" ), ( "4", "ycjqbmzrvl" ), ( "5", "rbkrqvoedm" ), ( "6", "ksywffdqju" ), ( "7", "nscbimakhl" ), ( "8", "brybqovyqc" ), ( "9", "uijywdikhf" ), ( "10", "wgybsatrfv" ), ( "11", "geqplmcfqq" ), ( "12", "fcprvieuda" ) ]
-    , workspaces = Dict.fromList [ ( "1", "01" ), ( "2", "02" ), ( "3", "03" ), ( "4", "04" ), ( "5", "05" ), ( "6", "06" ), ( "7", "07" ), ( "8", "08" ), ( "9", "09" ), ( "10", "10" ), ( "11", "11" ), ( "12", "12" ) ]
+    { attendees = Dict.fromList [ ( "1", "Mary" ), ( "2", "James" ), ( "3", "Jennifer" ), ( "4", "Robert" ), ( "5", "Linda" ), ( "6", "John" ), ( "7", "Susan" ), ( "8", "David" ), ( "9", "Jessica" ), ( "10", "Daniel" ), ( "11", "Karen" ), ( "12", "Paul" ) ]
     , invitationTemplate = "https://replit.com/join/{id}-{userId}"
+    , invitations = Dict.fromList [ ( "1", "cdxnggkyhb" ), ( "2", "ziibbtpuwy" ), ( "3", "blszhgxucp" ), ( "4", "ycjqbmzrvl" ), ( "5", "rbkrqvoedm" ), ( "6", "ksywffdqju" ), ( "7", "nscbimakhl" ), ( "8", "brybqovyqc" ), ( "9", "uijywdikhf" ), ( "10", "wgybsatrfv" ), ( "11", "geqplmcfqq" ), ( "12", "fcprvieuda" ) ]
     , previewTemplate = "https://{id}.{userId}.repl.co/"
-    , workspaceTemplate = "https://replit.com/@{userId}/{id}#src/Main.elm    "
-    , userId = "lucamug"
     , title = "Functional Programming with Elm"
+    , userId = "lucamug"
+    , workspaceTemplate = "https://replit.com/@{userId}/{id}#src/Main.elm    "
+    , workspaces = Dict.fromList [ ( "1", "01" ), ( "2", "02" ), ( "3", "03" ), ( "4", "04" ), ( "5", "05" ), ( "6", "06" ), ( "7", "07" ), ( "8", "08" ), ( "9", "09" ), ( "10", "10" ), ( "11", "11" ), ( "12", "12" ) ]
+    , x = String.fromInt initSize.x
+    , y = String.fromInt initSize.y
     }
 
 
 initPermanentStateEmpty : PermanentState
 initPermanentStateEmpty =
-    { x = String.fromInt initSize.x
-    , y = String.fromInt initSize.y
-    , attendees = Dict.empty
-    , invitations = Dict.empty
-    , workspaces = Dict.empty
+    { attendees = Dict.empty
     , invitationTemplate = ""
+    , invitations = Dict.empty
     , previewTemplate = ""
-    , workspaceTemplate = ""
-    , userId = ""
     , title = titleText
+    , userId = ""
+    , workspaceTemplate = ""
+    , workspaces = Dict.empty
+    , x = String.fromInt initSize.x
+    , y = String.fromInt initSize.y
     }
 
 
@@ -156,36 +154,36 @@ init flags =
         permanentState =
             locationHrefToPermanentState flags.locationHref
     in
-    ( { permanentState = permanentState
-      , modality = ModalityNormal
+    ( { env = flags.env
       , locationHref = flags.locationHref
-      , env = flags.env
+      , modality = ModalityNormal
+      , permanentState = permanentState
       }
     , changeMeta { content = permanentState.title, fieldName = "innerHTML", querySelector = "title" }
     )
 
 
 type Modality
-    = ModalityNormal
-    | ModalitySettings
-    | ModalityEditing
+    = ModalityEditing
     | ModalityFullscreen Int
+    | ModalityNormal
+    | ModalitySettings
 
 
 codecPermanentState : Codec.Codec PermanentState
 codecPermanentState =
     Codec.object
         (\x y attendees invitations invitationTemplate workspaces previewTemplate workspaceTemplate userId title ->
-            { x = x
-            , y = y
-            , attendees = attendees
-            , invitations = invitations
+            { attendees = attendees
             , invitationTemplate = invitationTemplate
-            , workspaces = workspaces
+            , invitations = invitations
             , previewTemplate = previewTemplate
-            , workspaceTemplate = workspaceTemplate
-            , userId = userId
             , title = title
+            , userId = userId
+            , workspaceTemplate = workspaceTemplate
+            , workspaces = workspaces
+            , x = x
+            , y = y
             }
         )
         |> Codec.field "x" .x Codec.string
@@ -204,23 +202,8 @@ codecPermanentState =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        MsgLoad permanentsState ->
-            ( { model | permanentState = permanentsState }
-            , Cmd.batch
-                [ pushUrl { sendItBack = False, url = buidlUrl model.locationHref permanentsState }
-                , changeMeta { content = permanentsState.title, fieldName = "innerHTML", querySelector = "title" }
-                ]
-            )
-
-        MsgKeypress char ->
-            if char == "Escape" then
-                ( { model | modality = ModalityNormal }, Cmd.none )
-
-            else
-                ( model, Cmd.none )
-
-        MsgUrlChanged locationHref ->
-            ( { model | permanentState = locationHrefToPermanentState locationHref }, Cmd.none )
+        MsgChangeModality modality ->
+            ( { model | modality = modality }, Cmd.none )
 
         MsgChangeValue valueType id value ->
             let
@@ -231,20 +214,11 @@ update msg model =
                 newPermanentState : PermanentState
                 newPermanentState =
                     case valueType of
-                        ValueX ->
-                            { permanentState | x = value }
-
-                        ValueY ->
-                            { permanentState | y = value }
-
                         ValueAttendee ->
                             { permanentState | attendees = Dict.insert id value permanentState.attendees }
 
                         ValueInvitation ->
                             { permanentState | invitations = Dict.insert id value permanentState.invitations }
-
-                        ValueWorkspace ->
-                            { permanentState | workspaces = Dict.insert id value permanentState.workspaces }
 
                         ValueInvitationTemplate ->
                             { permanentState | invitationTemplate = value }
@@ -252,14 +226,23 @@ update msg model =
                         ValuePreviewTemplate ->
                             { permanentState | previewTemplate = value }
 
-                        ValueWorkspaceTemplate ->
-                            { permanentState | workspaceTemplate = value }
+                        ValueTitle ->
+                            { permanentState | title = value }
 
                         ValueUserId ->
                             { permanentState | userId = value }
 
-                        ValueTitle ->
-                            { permanentState | title = value }
+                        ValueWorkspace ->
+                            { permanentState | workspaces = Dict.insert id value permanentState.workspaces }
+
+                        ValueWorkspaceTemplate ->
+                            { permanentState | workspaceTemplate = value }
+
+                        ValueX ->
+                            { permanentState | x = value }
+
+                        ValueY ->
+                            { permanentState | y = value }
             in
             ( { model | permanentState = newPermanentState }
             , Cmd.batch
@@ -268,8 +251,23 @@ update msg model =
                 ]
             )
 
-        MsgChangeModality modality ->
-            ( { model | modality = modality }, Cmd.none )
+        MsgKeypress char ->
+            if char == "Escape" then
+                ( { model | modality = ModalityNormal }, Cmd.none )
+
+            else
+                ( model, Cmd.none )
+
+        MsgLoad permanentsState ->
+            ( { model | permanentState = permanentsState }
+            , Cmd.batch
+                [ pushUrl { sendItBack = False, url = buidlUrl model.locationHref permanentsState }
+                , changeMeta { content = permanentsState.title, fieldName = "innerHTML", querySelector = "title" }
+                ]
+            )
+
+        MsgUrlChanged locationHref ->
+            ( { model | permanentState = locationHrefToPermanentState locationHref }, Cmd.none )
 
 
 buidlUrl : String -> PermanentState -> String
@@ -282,24 +280,24 @@ buidlUrl locationHref permanentState =
 
 
 type Msg
-    = MsgChangeValue Value String String
-    | MsgChangeModality Modality
-    | MsgUrlChanged String
+    = MsgChangeModality Modality
+    | MsgChangeValue Value String String
     | MsgKeypress String
     | MsgLoad PermanentState
+    | MsgUrlChanged String
 
 
 type Value
     = ValueAttendee
     | ValueInvitation
-    | ValueWorkspace
-    | ValueX
-    | ValueY
     | ValueInvitationTemplate
     | ValuePreviewTemplate
-    | ValueWorkspaceTemplate
-    | ValueUserId
     | ValueTitle
+    | ValueUserId
+    | ValueWorkspace
+    | ValueWorkspaceTemplate
+    | ValueX
+    | ValueY
 
 
 primaryColor : Color
@@ -314,7 +312,7 @@ menuAttrs =
     , Background.color <| rgba 1 1 1 0.8
     , Border.rounded 10
     , Border.width 1
-    , paddingEach { top = 5, right = 10, bottom = 5, left = 10 }
+    , paddingEach { bottom = 5, left = 10, right = 10, top = 5 }
     , moveDown 10
     ]
 
@@ -331,7 +329,7 @@ buttonEdit =
 
 buttonInvitation : Model -> Int -> Element msg
 buttonInvitation model id =
-    newTabLink [ htmlAttribute <| Html.Attributes.title "Open Workspace" ] { url = urlInvitation model id, label = el [] <| html <| Material.Icons.open_in_new iconSize Material.Icons.Types.Inherit }
+    newTabLink [ htmlAttribute <| Html.Attributes.title "Open Workspace" ] { label = el [] <| html <| Material.Icons.open_in_new iconSize Material.Icons.Types.Inherit, url = urlInvitation model id }
 
 
 buttonSettings : Element Msg
@@ -360,29 +358,28 @@ iconMenuLeft model maybeId =
         row
             (menuAttrs ++ [ moveRight 10 ])
             (case maybeId of
-                Nothing ->
-                    [ el [ Font.size 24 ] <| text "Settings"
-                    , buttonSave
-                    ]
-
                 Just id ->
                     []
                         ++ [ el [ Font.size 24, Font.bold, moveDown 1 ] (text <| String.fromInt id) ]
                         ++ (case model.modality of
-                                ModalityNormal ->
-                                    [ buttonInvitation model id ]
-
                                 ModalityEditing ->
                                     [ buttonSave ]
 
                                 ModalityFullscreen _ ->
-                                    [ buttonInvitation model id
-                                    ]
+                                    [ buttonInvitation model id ]
+
+                                ModalityNormal ->
+                                    [ buttonInvitation model id ]
 
                                 ModalitySettings ->
                                     []
                            )
                         ++ [ el [ Font.size 20, moveDown 1.5 ] <| text <| getValue id model.permanentState.attendees ]
+
+                Nothing ->
+                    [ el [ Font.size 24 ] <| text "Settings"
+                    , buttonSave
+                    ]
             )
 
 
@@ -392,9 +389,6 @@ iconMenuRight model maybeId =
         row
             (menuAttrs ++ [ alignRight, moveLeft 10 ])
             (case maybeId of
-                Nothing ->
-                    [ buttonSave ]
-
                 Just id ->
                     []
                         ++ (case model.modality of
@@ -414,6 +408,9 @@ iconMenuRight model maybeId =
                                     , buttonFullScreen id
                                     ]
                            )
+
+                Nothing ->
+                    [ buttonSave ]
             )
 
 
@@ -544,7 +541,7 @@ viewPreview model id =
                                 [ width fill
                                 , height fill
                                 , Background.color <| rgba 0 0 0 0.4
-                                , paddingEach { top = 55, right = 10, bottom = 0, left = 10 }
+                                , paddingEach { bottom = 0, left = 10, right = 10, top = 55 }
                                 , spacing 10
                                 ]
                             <|
@@ -574,7 +571,7 @@ urlInvitation model id =
 
 
 urlBuilder : { id : Int, template : String, userId : String, values : Dict.Dict String String } -> String
-urlBuilder { userId, id, values, template } =
+urlBuilder { id, template, userId, values } =
     template
         |> String.replace "{id}" (getValue id values)
         |> String.replace "{userId}" userId
@@ -639,7 +636,7 @@ viewEditing model =
                     , Font.color <| rgba 0 0 0 0.5
                     , spacing 10
                     , width fill
-                    , paddingEach { top = 60, right = 0, bottom = 0, left = 0 }
+                    , paddingEach { bottom = 0, left = 0, right = 0, top = 60 }
                     , width fill
                     ]
                     [ paragraph [] [ text <| "Commit " ++ model.env.commitHash ]
@@ -662,10 +659,10 @@ inputField2 args textValue =
         ]
         [ el [ width <| px 80, Font.alignRight ] <| text args.label
         , Input.text [ Border.rounded 6, padding 10 ]
-            { onChange = MsgChangeValue args.valueType (String.fromInt args.id)
-            , text = textValue
+            { label = Input.labelHidden args.label
+            , onChange = MsgChangeValue args.valueType (String.fromInt args.id)
             , placeholder = Nothing
-            , label = Input.labelHidden args.label
+            , text = textValue
             }
         ]
 
