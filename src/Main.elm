@@ -1,4 +1,4 @@
-port module Main exposing (main)
+port module Main exposing (Env, Flags, Modality, Model, Msg, PermanentState, main)
 
 import Base64
 import Browser
@@ -13,10 +13,8 @@ import Element.Input as Input
 import Html
 import Html.Attributes
 import Json.Decode
-import List.Extra
 import Material.Icons
 import Material.Icons.Types
-import String.Extra
 import Url
 
 
@@ -336,11 +334,6 @@ buttonInvitation model id =
     newTabLink [ htmlAttribute <| Html.Attributes.title "Open Workspace" ] { url = urlInvitation model id, label = el [] <| html <| Material.Icons.open_in_new iconSize Material.Icons.Types.Inherit }
 
 
-buttonWorkspace : Model -> Int -> Element msg
-buttonWorkspace model id =
-    newTabLink [ htmlAttribute <| Html.Attributes.title "Open Workspace" ] { url = urlInvitation model id, label = el [] <| html <| Material.Icons.space_dashboard iconSize Material.Icons.Types.Inherit }
-
-
 buttonSettings : Element Msg
 buttonSettings =
     Input.button [ htmlAttribute <| Html.Attributes.title "Settings" ] { label = el [] <| html <| Material.Icons.settings iconSize Material.Icons.Types.Inherit, onPress = Just <| MsgChangeModality <| ModalitySettings }
@@ -382,7 +375,7 @@ iconMenuLeft model maybeId =
                                 ModalityEditing ->
                                     [ buttonSave ]
 
-                                ModalityFullscreen id_ ->
+                                ModalityFullscreen _ ->
                                     [ buttonInvitation model id
                                     ]
 
@@ -580,11 +573,6 @@ urlInvitation model id =
     urlBuilder { id = id, template = model.permanentState.invitationTemplate, userId = model.permanentState.userId, values = model.permanentState.invitations }
 
 
-urlWorkspace : Model -> Int -> String
-urlWorkspace model id =
-    urlBuilder { id = id, template = model.permanentState.workspaceTemplate, userId = model.permanentState.userId, values = model.permanentState.workspaces }
-
-
 urlBuilder : { id : Int, template : String, userId : String, values : Dict.Dict String String } -> String
 urlBuilder { userId, id, values, template } =
     template
@@ -631,6 +619,7 @@ viewEditing model =
                     ]
                     [ paragraph [ Font.bold ] [ text "Dangerous area" ]
                     , let
+                        buttonAttrs : List (Attribute msg)
                         buttonAttrs =
                             [ padding 10
                             , Border.rounded 10
