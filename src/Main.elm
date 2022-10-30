@@ -18,6 +18,11 @@ import Material.Icons.Types
 import Url
 
 
+
+-- Icons:
+-- https://fonts.google.com/icons?selected=Material+Icons
+
+
 port pushUrl : { url : String, sendItBack : Bool } -> Cmd msg
 
 
@@ -89,7 +94,7 @@ locationHrefToPermanentState locationHref =
 
 initSize : { x : number, y : number1 }
 initSize =
-    { x = 4, y = 3 }
+    { x = 5, y = 3 }
 
 
 initDict : String -> Dict.Dict String String
@@ -119,14 +124,65 @@ initPermanentStateExample =
 
 initPermanentStateReplit : PermanentState
 initPermanentStateReplit =
-    { attendees = Dict.fromList [ ( "1", "Mary" ), ( "2", "James" ), ( "3", "Jennifer" ), ( "4", "Robert" ), ( "5", "Linda" ), ( "6", "John" ), ( "7", "Susan" ), ( "8", "David" ), ( "9", "Jessica" ), ( "10", "Daniel" ), ( "11", "Karen" ), ( "12", "Paul" ) ]
+    { attendees =
+        Dict.fromList
+            [ ( "1", "Main" )
+            , ( "2", "Kyosuke" )
+            , ( "3", "Jin" )
+            , ( "4", "Md" )
+            , ( "5", "Skandar" )
+            , ( "6", "Eric" )
+            , ( "7", "Takanori" )
+            , ( "8", "Tamer" )
+            , ( "9", "May" )
+            , ( "10", "Jose" )
+            , ( "11", "Anshul" )
+            , ( "12", "Scott" )
+            , ( "13", "Dinesh" )
+            , ( "14", "Extra 1" )
+            , ( "15", "Extra 2" )
+            ]
     , invitationTemplate = "https://replit.com/join/{id}-{userId}"
-    , invitations = Dict.fromList [ ( "1", "cdxnggkyhb" ), ( "2", "ziibbtpuwy" ), ( "3", "blszhgxucp" ), ( "4", "ycjqbmzrvl" ), ( "5", "rbkrqvoedm" ), ( "6", "ksywffdqju" ), ( "7", "nscbimakhl" ), ( "8", "brybqovyqc" ), ( "9", "uijywdikhf" ), ( "10", "wgybsatrfv" ), ( "11", "geqplmcfqq" ), ( "12", "fcprvieuda" ) ]
+    , invitations =
+        Dict.fromList
+            [ ( "1", "oqqeljgfln" )
+            , ( "2", "ziibbtpuwy" )
+            , ( "3", "blszhgxucp" )
+            , ( "4", "ycjqbmzrvl" )
+            , ( "5", "rbkrqvoedm" )
+            , ( "6", "yqbzsjiouz" )
+            , ( "7", "ywasebvixw" )
+            , ( "8", "" )
+            , ( "9", "" )
+            , ( "10", "wgybsatrfv" )
+            , ( "11", "" )
+            , ( "12", "" )
+            , ( "13", "" )
+            , ( "14", "" )
+            , ( "15", "" )
+            ]
     , previewTemplate = "https://{id}.{userId}.repl.co/"
     , title = "Functional Programming with Elm"
     , userId = "lucamug"
     , workspaceTemplate = "https://replit.com/@{userId}/{id}#src/Main.elm    "
-    , workspaces = Dict.fromList [ ( "1", "01" ), ( "2", "02" ), ( "3", "03" ), ( "4", "04" ), ( "5", "05" ), ( "6", "06" ), ( "7", "07" ), ( "8", "08" ), ( "9", "09" ), ( "10", "10" ), ( "11", "11" ), ( "12", "12" ) ]
+    , workspaces =
+        Dict.fromList
+            [ ( "1", "01" )
+            , ( "2", "02" )
+            , ( "3", "03" )
+            , ( "4", "04" )
+            , ( "5", "05" )
+            , ( "6", "06" )
+            , ( "7", "07" )
+            , ( "8", "08" )
+            , ( "9", "09" )
+            , ( "10", "10" )
+            , ( "11", "11" )
+            , ( "12", "12" )
+            , ( "13", "13" )
+            , ( "14", "14" )
+            , ( "15", "15" )
+            ]
     , x = String.fromInt initSize.x
     , y = String.fromInt initSize.y
     }
@@ -313,7 +369,6 @@ menuAttrs =
     , Border.rounded 10
     , Border.width 1
     , paddingEach { bottom = 5, left = 10, right = 10, top = 5 }
-    , moveDown 10
     ]
 
 
@@ -329,7 +384,12 @@ buttonEdit =
 
 buttonInvitation : Model -> Int -> Element msg
 buttonInvitation model id =
-    newTabLink [ htmlAttribute <| Html.Attributes.title "Open Workspace" ] { label = el [] <| html <| Material.Icons.open_in_new iconSize Material.Icons.Types.Inherit, url = urlInvitation model id }
+    newTabLink [ htmlAttribute <| Html.Attributes.title "Open Workspace by Invitation" ] { label = el [] <| html <| Material.Icons.mail iconSize Material.Icons.Types.Inherit, url = urlInvitation model id }
+
+
+buttonWorkspace : Model -> Int -> Element msg
+buttonWorkspace model id =
+    newTabLink [ htmlAttribute <| Html.Attributes.title "Open Workspace" ] { label = el [] <| html <| Material.Icons.open_in_new iconSize Material.Icons.Types.Inherit, url = urlWorkspace model id }
 
 
 buttonSettings : Element Msg
@@ -356,7 +416,7 @@ iconMenuLeft : Model -> Maybe Int -> Attribute Msg
 iconMenuLeft model maybeId =
     inFront <|
         row
-            (menuAttrs ++ [ moveRight 10 ])
+            (menuAttrs ++ [ moveRight 10, moveDown 10 ])
             (case maybeId of
                 Just id ->
                     []
@@ -366,10 +426,14 @@ iconMenuLeft model maybeId =
                                     [ buttonSave ]
 
                                 ModalityFullscreen _ ->
-                                    [ buttonInvitation model id ]
+                                    [ buttonInvitation model id
+                                    , buttonWorkspace model id
+                                    ]
 
                                 ModalityNormal ->
-                                    [ buttonInvitation model id ]
+                                    [ buttonInvitation model id
+                                    , buttonWorkspace model id
+                                    ]
 
                                 ModalitySettings ->
                                     []
@@ -387,7 +451,7 @@ iconMenuRight : Model -> Maybe Int -> Attribute Msg
 iconMenuRight model maybeId =
     inFront <|
         row
-            (menuAttrs ++ [ alignRight, moveLeft 10 ])
+            (menuAttrs ++ [ alignLeft, alignBottom, moveUp 10, moveRight 10 ])
             (case maybeId of
                 Just id ->
                     []
@@ -568,6 +632,11 @@ urlPreview model id =
 urlInvitation : Model -> Int -> String
 urlInvitation model id =
     urlBuilder { id = id, template = model.permanentState.invitationTemplate, userId = model.permanentState.userId, values = model.permanentState.invitations }
+
+
+urlWorkspace : Model -> Int -> String
+urlWorkspace model id =
+    urlBuilder { id = id, template = model.permanentState.workspaceTemplate, userId = model.permanentState.userId, values = model.permanentState.workspaces }
 
 
 urlBuilder : { id : Int, template : String, userId : String, values : Dict.Dict String String } -> String

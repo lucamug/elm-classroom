@@ -68,6 +68,7 @@ printf "${PRIMARY}${POINT}Copying other files ......"
     START_TIME=$SECONDS 
     cp docs/images/*           $FOLDER_DIST/images/ || true
     cp docs/favicon.ico        $FOLDER_DIST
+    cp docs/favicon.png        $FOLDER_DIST
     cp docs/robots.txt         $FOLDER_DIST
     cp docs/CNAME              $FOLDER_DIST
     cp docs/_redirects         $FOLDER_DIST
